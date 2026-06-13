@@ -1,57 +1,94 @@
-name: Deploy Time Machine to GitHub Pages
+'use client';
 
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+type TopBarProps = {
+  leapUrls: string[];
+};
 
-concurrency:
-  group: pages
-  cancel-in-progress: false
+export default function TopBar({ leapUrls }: TopBarProps) {
+  const router = useRouter();
+  const [trapOpen, setTrapOpen] = useState(false);
+  const [flashing, setFlashing] = useState(false);
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+  const hasPosts = leapUrls.length > 0;
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  function triggerLightTrap() {
+    setTrapOpen(true);
+    setFlashing(true);
+    window.setTimeout(() => setFlashing(false), 650);
+  }
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
+  function closeLightTrap() {
+    setTrapOpen(false);
+  }
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
+  function leap(event: React.MouseEvent<HTMLAnchorElement>) {
+    event.preventDefault();
 
-      - name: Install dependencies
-        run: npm install
+    if (!hasPosts) return;
 
-      - name: Build static site
-        run: npm run build
-        env:
-          NEXT_PUBLIC_BASE_PATH: /thetimemachine
+    const destination = leapUrls[Math.floor(Math.random() * leapUrls.length)];
+    router.push(destination);
+  }
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./out
+  return (
+    <>
+      <header className="site-header">
+        <Link className="brand brand-stacked" href="/" aria-label="The Time Machine home">
+          <span>THE</span>
+          <span>TIME</span>
+          <span>MACHINE</span>
+        </Link>
 
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+        <nav className="nav" aria-label="Main navigation">
+          <button
+            className="icon-button"
+            type="button"
+            aria-label="Attempt light mode"
+            title="Attempt light mode"
+            onClick={triggerLightTrap}
+          >
+            <span aria-hidden="true" className="moon-icon">
+              ☾
+            </span>
+            <span aria-hidden="true" className="sun-icon">
+              ☀
+            </span>
+          </button>
 
-    runs-on: ubuntu-latest
-    needs: build
+          <Link
+            className={`leap-button header-leap${hasPosts ? '' : ' is-disabled'}`}
+            href="/"
+            aria-disabled={!hasPosts}
+            onClick={leap}
+          >
+            Leap
+          </Link>
+        </nav>
+      </header>
 
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      {flashing && <div className="light-flash" aria-hidden="true" />}
+
+      {trapOpen && (
+        <div className="light-trap" role="presentation" onClick={closeLightTrap}>
+          <div
+            className="light-trap-card"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Light mode unavailable"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <p>Travelling faster than light, light mode unavailable.</p>
+
+            <button className="trap-ok-button" type="button" onClick={closeLightTrap}>
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

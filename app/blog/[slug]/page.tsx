@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { formatDate, getAllPosts, getPostBySlug, postUrl, yearUrl } from '@/lib/posts';
+import { formatDate, getPostsByYear, getYears, postUrl } from '@/lib/posts';
 import { site } from '@/lib/site';
+import YearMonthSlider from '@/components/YearMonthSlider';
 
 type PageProps = {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ year: string }>;
 };
 
 type PostWithOptionalTags = {
@@ -12,76 +13,61 @@ type PostWithOptionalTags = {
 };
 
 export async function generateStaticParams() {
-  const posts = await getAllPosts();
-  return posts.map((post) => ({ slug: post.slug }));
+  const years = await getYears();
+  return years.map((year) => ({ year: String(year) }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug } = await params;
-  const post = await getPostBySlug(slug);
-
-  if (!post) {
-    return { title: `Not found | ${site.title}` };
-  }
+  const { year } = await params;
 
   return {
-    title: `${post.title} | ${site.title}`,
-    description: post.abstract,
-    openGraph: {
-      title: post.title,
-      description: post.abstract,
-      type: 'article',
-      publishedTime: post.publishedAt,
-      images: post.cover ? [post.cover] : undefined,
-      url: postUrl(post)
-    }
+    title: `${year} | ${site.title}`,
+    description: `Entries published in ${year}.`
   };
 }
 
-export default async function BlogPostPage({ params }: PageProps) {
-  const { slug } = await params;
-  const post = await getPostBySlug(slug);
+export default async function YearPage({ params }: PageProps) {
+  const { year: yearParam } = await params;
+  const year = Number(yearParam);
 
-  if (!post) notFound();
+  if (!Number.isInteger(year)) notFound();
 
-  const displayDate = formatDate(post.publishedAt).replace(',', '');
-  const rawTags = (post as PostWithOptionalTags).tags;
-  const tags: string[] = Array.isArray(rawTags) ? rawTags : [];
+  const posts = await getPostsByYear(year);
+
+  if (posts.length === 0) notFound();
+
+  const yearString = String(year);
+  const yearStart = yearString.slice(0, -2);
+  const yearEnd = yearString.slice(-2);
+
+  const entries = posts.map((post) => {
+    const date = new Date(post.publishedAt);
+    const rawTags = (post as PostWithOptionalTags).tags;
+    const tags: string[] = Array.isArray(rawTags) ? rawTags : [];
+
+    return {
+      title: post.title,
+      abstract: post.abstract,
+      publishedAt: post.publishedAt,
+      displayDate: formatDate(post.publishedAt),
+      url: postUrl(post),
+      monthIndex: date.getMonth(),
+      tags
+    };
+  });
 
   return (
-    <article className="article">
-      <header className="article-header">
-        <div className="article-meta">
-          <time dateTime={post.publishedAt}>{displayDate}</time>
-        </div>
+    <section className="year-page" aria-labelledby="year-title">
+      <h1 className="page-title year-page-title" id="year-title">
+        <span>{yearStart}</span>
+        <span className="year-title-outline">{yearEnd}</span>
+      </h1>
 
-        <h1 className="article-title">{post.title}</h1>
+      <p className="page-intro year-page-count">
+        {posts.length} {posts.length === 1 ? 'entry' : 'entries'}
+      </p>
 
-        {tags.length > 0 && (
-          <div className="article-tags" aria-label="Article tags">
-            {tags.map((tag) => (
-              <span className="article-tag" key={tag}>
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {post.abstract && <p className="article-abstract">{post.abstract}</p>}
-      </header>
-
-      {post.cover && (
-        <figure className="cover">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={post.cover} alt={post.coverAlt ?? ''} />
-        </figure>
-      )}
-
-      <div className="prose" dangerouslySetInnerHTML={{ __html: post.html }} />
-
-      <a className="back-link" href={yearUrl(post.year)}>
-        Back to {post.year}
-      </a>
-    </article>
+      <YearMonthSlider entries={entries} />
+    </section>
   );
 }

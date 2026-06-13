@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { formatDate, getAllPosts, getPostBySlug, postUrl, yearUrl } from '@/lib/posts';
 import { site } from '@/lib/site';
@@ -79,9 +80,9 @@ export default async function BlogPostPage({ params }: PageProps) {
 
       <div className="prose" dangerouslySetInnerHTML={{ __html: post.html }} />
 
-      <a className="back-link" href={yearUrl(post.year)}>
+      <Link className="back-link" href={yearUrl(post.year)}>
         Back to {post.year}
-      </a>
+      </Link>
     </article>
   );
 }

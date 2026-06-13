@@ -36,9 +36,14 @@ export default async function YearPage({ params }: PageProps) {
 
   if (posts.length === 0) notFound();
 
+  const yearString = String(year);
+  const yearStart = yearString.slice(0, -2);
+  const yearEnd = yearString.slice(-2);
+
   const entries = posts.map((post) => {
     const date = new Date(post.publishedAt);
-    const tags = Array.isArray((post as PostWithOptionalTags).tags) ? (post as PostWithOptionalTags).tags : [];
+    const rawTags = (post as PostWithOptionalTags).tags;
+    const tags: string[] = Array.isArray(rawTags) ? rawTags : [];
 
     return {
       title: post.title,
@@ -54,7 +59,8 @@ export default async function YearPage({ params }: PageProps) {
   return (
     <section className="year-page" aria-labelledby="year-title">
       <h1 className="page-title year-page-title" id="year-title">
-        {year}
+        <span>{yearStart}</span>
+        <span className="year-title-outline">{yearEnd}</span>
       </h1>
 
       <p className="page-intro year-page-count">

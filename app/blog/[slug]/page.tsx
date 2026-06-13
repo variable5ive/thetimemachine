@@ -45,7 +45,8 @@ export default async function BlogPostPage({ params }: PageProps) {
   if (!post) notFound();
 
   const displayDate = formatDate(post.publishedAt).replace(',', '');
-  const tags = Array.isArray((post as PostWithOptionalTags).tags) ? (post as PostWithOptionalTags).tags : [];
+  const rawTags = (post as PostWithOptionalTags).tags;
+  const tags: string[] = Array.isArray(rawTags) ? rawTags : [];
 
   return (
     <article className="article">
@@ -56,8 +57,6 @@ export default async function BlogPostPage({ params }: PageProps) {
 
         <h1 className="article-title">{post.title}</h1>
 
-        {post.abstract && <p className="article-abstract">{post.abstract}</p>}
-
         {tags.length > 0 && (
           <div className="article-tags" aria-label="Article tags">
             {tags.map((tag) => (
@@ -67,6 +66,8 @@ export default async function BlogPostPage({ params }: PageProps) {
             ))}
           </div>
         )}
+
+        {post.abstract && <p className="article-abstract">{post.abstract}</p>}
       </header>
 
       {post.cover && (

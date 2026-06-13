@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { type CSSProperties, type KeyboardEvent, type PointerEvent, useMemo, useState } from 'react';
 
 type YearEntry = {
@@ -112,7 +113,7 @@ export default function YearMonthSlider({ entries }: YearMonthSliderProps) {
 
                 <div>
                   <h2>
-                    <a href={entry.url}>{entry.title}</a>
+                    <Link href={entry.url}>{entry.title}</Link>
                   </h2>
 
                   {entry.tags.length > 0 && (

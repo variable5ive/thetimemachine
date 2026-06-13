@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { type MouseEvent, useEffect, useState } from 'react';
 
 type TopBarProps = {
   leapUrls: string[];
@@ -12,8 +12,37 @@ export default function TopBar({ leapUrls }: TopBarProps) {
   const router = useRouter();
   const [trapOpen, setTrapOpen] = useState(false);
   const [flashing, setFlashing] = useState(false);
+  const [headerHidden, setHeaderHidden] = useState(false);
 
   const hasPosts = leapUrls.length > 0;
+
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+    let ticking = false;
+
+    function updateHeader() {
+      const currentScrollY = window.scrollY;
+      const scrollingDown = currentScrollY > lastScrollY;
+      const awayFromTop = currentScrollY > 80;
+
+      setHeaderHidden(scrollingDown && awayFromTop);
+      lastScrollY = Math.max(currentScrollY, 0);
+      ticking = false;
+    }
+
+    function handleScroll() {
+      if (!ticking) {
+        window.requestAnimationFrame(updateHeader);
+        ticking = true;
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   function triggerLightTrap() {
     setTrapOpen(true);
@@ -25,7 +54,7 @@ export default function TopBar({ leapUrls }: TopBarProps) {
     setTrapOpen(false);
   }
 
-  function leap(event: React.MouseEvent<HTMLAnchorElement>) {
+  function leap(event: MouseEvent<HTMLAnchorElement>) {
     event.preventDefault();
 
     if (!hasPosts) return;
@@ -36,7 +65,7 @@ export default function TopBar({ leapUrls }: TopBarProps) {
 
   return (
     <>
-      <header className="site-header">
+      <header className={`site-header${headerHidden ? ' is-hidden' : ''}`}>
         <Link className="brand brand-stacked" href="/" aria-label="The Time Machine home">
           <span>THE</span>
           <span>TIME</span>
